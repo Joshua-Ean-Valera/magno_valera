@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeGrounds - Map</title>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* General Page Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #4f4f4f; /* Matches the dark gray background in the image */
+            color: white;
+        }
+
+        /* Header Styling */
+        header {
+            background-color: black;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 28px; /* Matches the bold and large header text */
+            font-weight: bold;
+        }
+
+        /* Map Styling */
+        #map {
+            height: 400px; /* Reduced height for a more compact map */
+            width: 80%;
+            margin: 20px auto;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+        }
+
+        /* Button Container Styling */
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px; /* Proper spacing between buttons and the header */
+        }
+
+        /* Button Styling */
+        button {
+            background-color: #0078FF; /* Matches button color in the image */
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px; /* Matches slightly rounded buttons */
+            padding: 10px 20px;
+            margin: 0 10px; /* Space between buttons */
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* Adds a slight shadow for depth */
+        }
+
+        button:hover {
+            background-color: #0056b3; /* Slightly darker hover effect */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        SAFEGROUNDS MAP
+    </header>
+    <div class="btn-container">
+        <button id="show-centers">Show Evacuation Centers</button>
+        <button onclick="window.location.href='/'">Home</button>
+    </div>
+    <div id="map"></div>
+    <script>
+        // Initialize Map
+        const map = L.map('map').setView([13.453, 123.368], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        const evacuationCenters = [];
+        let markers = [];
+        let markersVisible = false;
+
+        const showCentersBtn = document.getElementById('show-centers');
+        showCentersBtn.disabled = true; // Disable button until data is loaded
+
+        // Fetch evacuation center data
+        fetch('/get_evacuations')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(center => evacuationCenters.push(center));
+                showCentersBtn.disabled = false; // Enable button after data is loaded
+            });
+
+        showCentersBtn.addEventListener('click', () => {
+            if (markersVisible) {
+                markers.forEach(marker => map.removeLayer(marker));
+                markers = [];
+                markersVisible = false;
+            } else {
+                evacuationCenters.forEach(center => {
+                    const status = center.is_full
+                        ? "<span style='color:red;font-weight:bold;'>Full</span>"
+                        : "<span style='color:green;font-weight:bold;'>Available</span>";
+                    const marker = L.marker([center.lat, center.lng])
+                        .addTo(map)
+                        .bindPopup(`${center.name}<br>Status: ${status}`);
+                    markers.push(marker);
+                });
+                markersVisible = true;
+            }
+        });
+
+        // Click event to find closest center
+        map.on('click', function (e) {
+            fetch('/closest_center', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lat: e.latlng.lat, lng: e.latlng.lng })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const popup = L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent(`Closest Center: ${data.closest.name}<br>Distance: ${data.distance} km`)
+                    .openOn(map);
+            });
+        });
+    </script>
+</body>
+</html>
