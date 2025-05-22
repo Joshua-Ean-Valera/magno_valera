@@ -10,11 +10,11 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 30 px;
             text-align: center;
             color: white; /* Text color for readability */
             /* Set blurred flood image as background */
-            background: url('/static/flood_bg_blur.jpg') no-repeat center center fixed;
+            background: url('/static/bg.png') no-repeat center center fixed;
             background-size: cover;
             position: relative;
         }
@@ -26,24 +26,27 @@
             background: rgba(0,0,0,0.7);
             z-index: 0;
         }
-        .logo-container {
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            margin: 40px 0 0 0;
             position: relative;
             z-index: 1;
-            margin-top: 30px;
-            margin-bottom: 0;
         }
-        .logo-container img {
-            width: 120px;
+        .header-row img {
+            width: 80px;
             height: auto;
             filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
         }
-        header {
-            background-color: black;
-            color: white;
-            padding: 20px 0;
-            font-size: 24px;
-            position: relative;
-            z-index: 1;
+        .header-row h1 {
+            font-size: 3.2rem;
+            margin: 0;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 2px;
+            line-height: 1.1;
         }
         #map {
             height: 400px; /* Reduced height for a more compact map */
@@ -99,20 +102,25 @@
             color: #fff;
         }
         /* Ensure content is above overlay */
-        .logo-container, header, .btn-container, #map {
+        .header-row, .btn-container, #map {
             position: relative;
             z-index: 1;
+        }
+        @media (max-width: 600px) {
+            .header-row h1 {
+                font-size: 2rem;
+            }
+            .header-row img {
+                width: 48px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="logo-container">
-        <!-- Use the flood house logo (ensure the path is correct in your static folder) -->
-        <img src="/static/flood_house_logo.png" alt="Flood House Logo">
-    </div>
-    <header>
+    <div class="header-row">
+        <img src="/static/logo.png" alt="Flood House Logo">
         <h1>SAFEGROUNDS MAP</h1>
-    </header>
+    </div>
     <div class="btn-container">
         <button id="show-centers">Show Evacuation Centers</button>
         <button onclick="window.location.href='/'">Home</button>
