@@ -10,13 +10,15 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 30 px;
-            text-align: center;
+            padding: 0; /* Remove erroneous space and px unit */
+            min-height: 100vh;
+            box-sizing: border-box;
             color: white; /* Text color for readability */
             /* Set blurred flood image as background */
             background: url('/static/bg.png') no-repeat center center fixed;
             background-size: cover;
             position: relative;
+            overflow: hidden; /* Prevent scrollbars */
         }
         /* Overlay for darkening the background */
         body::before {
@@ -49,13 +51,19 @@
             line-height: 1.1;
         }
         #map {
-            height: 400px; /* Reduced height for a more compact map */
+            /* Make the map fill the remaining space below header/buttons */
             width: 80%;
-            margin: 20px auto;
+            min-height: 240px;
+            /* Subtract header and buttons height, and some margin */
+            height: calc(100vh - 210px);
+            max-height: 600px;
+            margin: 20px auto 20px auto;
             border: 2px solid #ccc;
             border-radius: 10px;
             position: relative;
             z-index: 1;
+            box-sizing: border-box;
+            background: #222c36;
         }
         .btn-container {
             margin: 20px 0;
@@ -112,6 +120,11 @@
             }
             .header-row img {
                 width: 48px;
+            }
+            #map {
+                width: 95%;
+                height: calc(100vh - 180px);
+                max-height: 350px;
             }
         }
     </style>
