@@ -114,6 +114,22 @@
             position: relative;
             z-index: 1;
         }
+        .custom-toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222c36;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+            font-size: 1.1rem;
+            z-index: 9999;
+            opacity: 0.97;
+            display: none;
+            pointer-events: none;
+        }
         @media (max-width: 600px) {
             .header-row h1 {
                 font-size: 2rem;
@@ -145,6 +161,7 @@
         </select>
     </div>
     <div id="map"></div>
+    <div id="custom-toast" class="custom-toast"></div>
     <script>
         // const map = L.map('map').setView([13.453, 123.368], 15);
 
@@ -231,6 +248,51 @@
                 data.forEach(center => evacuationCenters.push(center));
             });
 
+        // Helper to find the closest and alternate (not full) center
+        function findClosestAndAlternate(userLatLng, centers) {
+            let closest = null, closestDist = Infinity;
+            let alternate = null, alternateDist = Infinity;
+
+            centers.forEach(center => {
+                const dist = map.distance(userLatLng, L.latLng(center.lat, center.lng));
+                if (dist < closestDist) {
+                    alternate = closest;
+                    alternateDist = closestDist;
+                    closest = center;
+                    closestDist = dist;
+                } else if (dist < alternateDist) {
+                    alternate = center;
+                    alternateDist = dist;
+                }
+            });
+
+            // If closest is full, find the next nearest that is not full
+            if (closest && closest.is_full) {
+                let nextAvailable = null, nextDist = Infinity;
+                centers.forEach(center => {
+                    if (!center.is_full) {
+                        const dist = map.distance(userLatLng, L.latLng(center.lat, center.lng));
+                        if (dist < nextDist) {
+                            nextAvailable = center;
+                            nextDist = dist;
+                        }
+                    }
+                });
+                return { closest, alternate: nextAvailable, closestDist, alternateDist: nextDist };
+            }
+            return { closest, alternate: null, closestDist, alternateDist: null };
+        }
+
+        // Show a custom toast message
+        function showToast(message) {
+            const toast = document.getElementById('custom-toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 5000);
+        }
+
         // Listen for user click to set their location and show closest center
         map.on('click', function (e) {
             // Remove previous user marker if any
@@ -257,22 +319,14 @@
                 return;
             }
 
-            // Find the closest center
-            let minDist = Infinity;
-            let closest = null;
-            filteredCenters.forEach(center => {
-                const dist = map.distance(e.latlng, L.latLng(center.lat, center.lng));
-                if (dist < minDist) {
-                    minDist = dist;
-                    closest = center;
-                }
-            });
+            // Find the closest and alternate center
+            const { closest, alternate, closestDist, alternateDist } = findClosestAndAlternate(e.latlng, filteredCenters);
 
             // Remove previous center markers
             markers.forEach(marker => map.removeLayer(marker));
             markers = [];
 
-            // Show only the closest center
+            // Show the closest center
             if (closest) {
                 const status = closest.is_full
                     ? "<span style='color:red;font-weight:bold;'>Full</span>"
@@ -282,6 +336,17 @@
                     .bindPopup(`${closest.name}<br>Status: ${status}<br>Safe for: ${closest.safe_for.join(", ")}`);
                 markers.push(marker);
                 marker.openPopup();
+            }
+
+            // If the closest is full and there is an alternate, show it too and show a toast
+            if (closest && closest.is_full && alternate) {
+                const altStatus = "<span style='color:green;font-weight:bold;'>Available</span>";
+                const altMarker = L.marker([alternate.lat, alternate.lng])
+                    .addTo(map)
+                    .bindPopup(`${alternate.name}<br>Status: ${altStatus}<br>Safe for: ${alternate.safe_for.join(", ")}`);
+                markers.push(altMarker);
+                altMarker.openPopup();
+                showToast(`The nearest evacuation center ${closest.name} is full. You may go to ${alternate.name} because it has vacancy and is the next nearest.`);
             }
         });
 
